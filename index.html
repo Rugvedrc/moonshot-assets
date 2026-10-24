@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Doodle Dash</title>
+  <meta name="description" content="A tiny toy-car racer on a giant desk. Every 3D model in the game was generated with Vi3W." />
+  <meta property="og:title" content="Doodle Dash — made with Vi3W" />
+  <meta property="og:description" content="Drift, jump and bonk giant rubber ducks off a desk. All 3D models generated with Vi3W." />
+  <meta name="theme-color" content="#f6e3c4" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏎️</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Permanent+Marker&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="speedlines"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-box" id="hud-score"><span class="lbl">SCORE</span><span id="score">0</span></div>
+    <div class="hud-box" id="hud-time"><span id="time">60</span></div>
+    <div class="hud-box" id="hud-combo"><span class="lbl">COMBO</span><span id="combo">x1</span><div class="bar"><i id="combo-bar"></i></div></div>
+    <div id="drift-meter"><i id="drift-fill"></i><span id="drift-lbl">DRIFT</span></div>
+  </div>
+  <div id="popups"></div>
+  <div id="center-text"></div>
+
+  <!-- Loading -->
+  <div id="loading" class="screen">
+    <div class="paper-card">
+      <h1 class="logo small">Doodle<br/>Dash</h1>
+      <p>Loading Vi3W models…</p>
+      <div class="progress"><i id="load-bar"></i></div>
+      <p class="tiny" id="load-msg">0%</p>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div id="title" class="screen hidden">
+    <div class="title-wrap">
+      <h1 class="logo">Doodle<br/>Dash</h1>
+      <p class="tagline">a tiny racer on a giant desk</p>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-play">▶ PLAY</button>
+        <button class="btn" id="btn-showcase">✦ Made with Vi3W</button>
+      </div>
+      <p class="best" id="title-best"></p>
+      <div class="controls-card" id="controls-card">
+        <div><b>W / ↑</b> gas</div>
+        <div><b>A D / ← →</b> steer</div>
+        <div><b>S / ↓</b> brake</div>
+        <div><b>SPACE</b> hold to drift → release for turbo</div>
+      </div>
+      <div class="goal-card">
+        <span>⭐ grab stars</span><span>🔥 chain combos</span><span>🦆 bonk ducks off the desk</span><span>🪂 don't fall off</span>
+      </div>
+    </div>
+    <footer class="credits">All 3D models generated with <a href="https://app.vi3w.in" target="_blank" rel="noopener">Vi3W</a> · Game by Rugved Chandekar</footer>
+  </div>
+
+  <!-- Showcase -->
+  <div id="showcase" class="screen hidden">
+    <div class="sc-top">
+      <button class="btn small" id="sc-back">← Back</button>
+      <h2>Made with Vi3W</h2>
+      <span></span>
+    </div>
+    <div class="sc-panel">
+      <button class="btn round" id="sc-prev">‹</button>
+      <div class="sc-info">
+        <div class="sc-count" id="sc-count">1 / 4</div>
+        <h3 id="sc-name">Toy Racer</h3>
+        <p id="sc-role"></p>
+        <div class="sc-stats">
+          <span><b id="sc-tris">0</b> triangles</span>
+          <span><b id="sc-size">0</b> MB .glb</span>
+          <span><b>1</b> textured mesh</span>
+        </div>
+      </div>
+      <button class="btn round" id="sc-next">›</button>
+    </div>
+    <div class="workflow">
+      <span>✏️ prompt</span><i>→</i><span>🖼️ Vi3W image</span><i>→</i><span>🧊 Vi3W 3D (.glb)</span><i>→</i><span>🎮 Three.js game</span>
+    </div>
+    <p class="tiny sc-hint">drag to spin</p>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="screen dim hidden">
+    <div class="paper-card">
+      <h2>Paused</h2>
+      <div class="btn-col">
+        <button class="btn primary" id="btn-resume">Resume</button>
+        <button class="btn" id="btn-restart">Restart</button>
+        <button class="btn" id="btn-quit">Main menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results" class="screen dim hidden">
+    <div class="paper-card results">
+      <div class="rank" id="res-rank">A</div>
+      <h2 id="res-title">Time's up!</h2>
+      <div class="res-score" id="res-score">0</div>
+      <p class="new-best hidden" id="res-newbest">★ NEW BEST ★</p>
+      <div class="res-grid">
+        <div><b id="res-stars">0</b><span>stars</span></div>
+        <div><b id="res-combo">x1</b><span>best combo</span></div>
+        <div><b id="res-ducks">0</b><span>ducks bonked off</span></div>
+        <div><b id="res-air">0.0s</b><span>best air</span></div>
+      </div>
+      <p class="best" id="res-best"></p>
+      <div class="btn-row">
+        <button class="btn primary" id="btn-again">↻ Play again</button>
+        <button class="btn" id="btn-share">Share</button>
+        <button class="btn" id="btn-menu">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Touch controls -->
+  <div id="touch" class="hidden">
+    <div class="t-left">
+      <button class="t-btn" data-k="left">◀</button>
+      <button class="t-btn" data-k="right">▶</button>
+    </div>
+    <div class="t-right">
+      <button class="t-btn" data-k="brake">▼</button>
+      <button class="t-btn big" data-k="drift">DRIFT</button>
+    </div>
+  </div>
+
+  <button id="btn-mute" class="icon-btn" title="Sound (M)">🔊</button>
+  <button id="btn-pause" class="icon-btn hidden" title="Pause (Esc)">⏸</button>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
